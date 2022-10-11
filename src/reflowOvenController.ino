@@ -383,6 +383,11 @@ Adafruit_MAX31855 thermocouple = Adafruit_MAX31855(thermocoupleCSPin);
 
 
 
+
+
+
+
+
 void MAX_Initialize(void){
 
   
@@ -455,6 +460,46 @@ double MAX_GetTemp(void) {
   //Serial.print("Temp:");Serial.println(input); Serial.println(F(""));     // Debug Temperature
   return _tempreading;
 }
+
+/*
+// check rotary encoder; set temperature, toggle boost mode, enter setup menu accordingly
+uint16_t  SetTemp, ShowTemp, gap, Step;
+
+// reads current rotary encoder value
+int getRotary() {
+  return (count >> ROTARY_TYPE);
+}
+
+void ROTARYCheck() {
+  // set working temperature according to rotary encoder value
+  SetTemp = getRotary();
+  
+  // check rotary encoder switch
+  uint8_t c = digitalRead(BUTTON_PIN);
+  if ( !c && c0 ) {
+    beep();
+    buttonmillis = millis();
+    while( (!digitalRead(BUTTON_PIN)) && ((millis() - buttonmillis) < 500) );
+    if ((millis() - buttonmillis) >= 500) SetupScreen();
+    else {
+      inBoostMode = !inBoostMode;
+      if (inBoostMode) boostmillis = millis();
+      handleMoved = true;
+    }
+  }
+  c0 = c;
+
+  // check timer when in boost mode
+  if (inBoostMode && timeOfBoost) {
+    goneSeconds = (millis() - boostmillis) / 1000;
+    if (goneSeconds >= timeOfBoost) {
+      inBoostMode = false;              // stop boost mode
+      beep();                           // beep if boost mode is over
+      beepIfWorky = true;               // beep again when working temperature is reached
+    }
+  }
+}
+*/
 
 
 void setup()
