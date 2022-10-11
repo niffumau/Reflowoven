@@ -222,6 +222,9 @@ typedef enum REFLOW_PROFILE
 // ***** CONSTANTS *****
 // ***** GENERAL *****
 #define VERSION 2 // Replace with 1 or 2
+
+
+
 const char compile_date[] = __DATE__ " " __TIME__;
 
 
@@ -370,20 +373,20 @@ Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire);
  * Shoudl really have a level shifter/logic converter
  */
 
-// MAX31856 thermocouple interface
-//Adafruit_MAX31856 thermocouple = Adafruit_MAX31856(thermocoupleCSPin);
-//Adafruit_MAX31855 thermocouple = Adafruit_MAX31855(thermocoupleCSPin);
-//Adafruit_MAX31855 thermocouple = Adafruit_MAX31855(hermocoupleCSPin, SPI1);
+
+#ifdef ADAFRUIT_MAX31856_H
+Adafruit_MAX31856 thermocouple = Adafruit_MAX31856(thermocoupleCSPin);
+#elif defined(ADAFRUIT_MAX31855_H) 
 Adafruit_MAX31855 thermocouple = Adafruit_MAX31855(thermocoupleCSPin);
-//MAX31855 thermocouple = MAX31855(thermocoupleCSPin);
+//Adafruit_MAX31855 thermocouple = Adafruit_MAX31855(hermocoupleCSPin, SPI1);   // not really sure
+#endif
 
 
 
 void MAX_Initialize(void){
 
-   // Initialize thermocouple interface
   
-  thermocouple.begin();
+  thermocouple.begin();   // Initialize thermocouple interface
 
 #ifdef ADAFRUIT_MAX31855_H
 
@@ -413,13 +416,14 @@ void MAX_Initialize(void){
 
 double MAX_GetTemp(void) {
   double _tempreading, _tempreading_internal;
-
+  uint8_t _fault;
 
 #ifdef ADAFRUIT_MAX31855_H
   _tempreading_internal = thermocouple.readInternal();
-  
-
   _tempreading = thermocouple.readCelsius();
+
+  // Maybe just try and read a fault here?
+
   if (isnan(_tempreading)) {
     Serial.println("Thermocouple fault(s) detected!");
     uint8_t e = thermocouple.readError();
@@ -430,40 +434,12 @@ double MAX_GetTemp(void) {
     //Serial.print("C:"); Serial.print(input);
     //Serial.print("\tInternal:");  Serial.println(_tempreading_internal);
   }
-#endif
 
-      //input = thermocouple.readThermocoupleTemperature();
-   //    Serial.print("Internal Temp = ");
-   //Serial.println(thermocouple.readInternal());
+#elif defined(ADAFRUIT_MAX31856_H)
+  _tempreading = thermocouple.readThermocoupleTemperature();
+  _fault = thermocouple.readFault();     // Check for thermocouple fault
 
-   // Check for thermocouple fault
-    //fault = thermocouple.readFault();
-
-    // If any thermocouple fault is detected
-   /* if ((fault & MAX31856_FAULT_CJRANGE) ||
-        (fault & MAX31856_FAULT_TCRANGE) ||
-        (fault & MAX31856_FAULT_CJHIGH) ||
-        (fault & MAX31856_FAULT_CJLOW) ||
-        (fault & MAX31856_FAULT_TCHIGH) ||
-        (fault & MAX31856_FAULT_TCLOW) ||
-        (fault & MAX31856_FAULT_OVUV) ||
-        (fault & MAX31856_FAULT_OPEN))
-    {
-      // Illegal operation
-      reflowState = REFLOW_STATE_ERROR;
-      reflowStatus = REFLOW_STATUS_OFF;
-      Serial.println(F("Error"));
-     // how about we fucking define an error...
-      if (fault & MAX31856_FAULT_CJRANGE) Serial.print(F(" CJRANGE"));
-      if (fault & MAX31856_FAULT_TCRANGE) Serial.print(F(" TCRANGE"));
-      if (fault & MAX31856_FAULT_CJHIGH) Serial.print(F(" CJHIGH"));
-      if (fault & MAX31856_FAULT_CJLOW) Serial.print(F(" CJLOW"));
-      if (fault & MAX31856_FAULT_TCHIGH) Serial.print(F(" TCHIGH"));
-      if (fault & MAX31856_FAULT_TCLOW) Serial.print(F(" TCLOW"));
-      if (fault & MAX31856_FAULT_OVUV) Serial.print(F(" OVUV"));
-      if (fault & MAX31856_FAULT_OPEN) Serial.print(F(" OPEN"));*/
- 
-     /* if (fault) {
+  if (fault) {
     if (fault & MAX31856_FAULT_CJRANGE) Serial.println("Cold Junction Range Fault");
     if (fault & MAX31856_FAULT_TCRANGE) Serial.println("Thermocouple Range Fault");
     if (fault & MAX31856_FAULT_CJHIGH)  Serial.println("Cold Junction High Fault");
@@ -472,18 +448,11 @@ double MAX_GetTemp(void) {
     if (fault & MAX31856_FAULT_TCLOW)   Serial.println("Thermocouple Low Fault");
     if (fault & MAX31856_FAULT_OVUV)    Serial.println("Over/Under Voltage Fault");
     if (fault & MAX31856_FAULT_OPEN)    Serial.println("Thermocouple Open Fault");
+  }
+    
+#endif
 
-      Serial.print("Temp:");Serial.println(input);*/
-    //}
-      
-
-
-      //Serial.println(F(""));
-    //}
-
-
-
-
+  //Serial.print("Temp:");Serial.println(input); Serial.println(F(""));     // Debug Temperature
   return _tempreading;
 }
 
@@ -520,7 +489,6 @@ void setup()
   digitalWrite(ledPin, HIGH);
 
  
-
   // Start-up splash
   digitalWrite(buzzerPin, HIGH);
 #if VERSION == 1
@@ -558,7 +526,6 @@ void setup()
   delay(3000);
   oled.clearDisplay();
 #endif
-
 
 
   // Turn off LED (active high)
