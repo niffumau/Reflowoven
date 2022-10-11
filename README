@@ -1,2 +1,10 @@
-Empty readmy
+Reflow Oven
 
+Starting with an arduino Megga2560 but might convert to maybe a smaller one or maybe convert to an ESP32 so i can have an internet connected reflow oven?
+
+3.3v logic on the MAX31855 chip
+
+
+This is very hybrid at the moment, really waiting for a proper GFX display so I might need to rewrite the code so that I include some defines so i can switch between a standard LCD and the GFX
+
+Maybe I should also include the interface thing so i can use an LCD with the attachment board on the back?

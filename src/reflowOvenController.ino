@@ -165,6 +165,7 @@
 *******************************************************************************/
 
 // ***** INCLUDES *****
+#include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
 #include <EEPROM.h>
@@ -175,6 +176,9 @@
 #include <Adafruit_MAX31855.h> 
 //#include <MAX31855.h> 
 #include <PID_v1.h>
+
+#include "main.h"
+
 
 // ***** TYPE DEFINITIONS *****
 typedef enum REFLOW_STATE
@@ -218,6 +222,8 @@ typedef enum REFLOW_PROFILE
 // ***** CONSTANTS *****
 // ***** GENERAL *****
 #define VERSION 2 // Replace with 1 or 2
+const char compile_date[] = __DATE__ " " __TIME__;
+
 
 // ***** GENERAL PROFILE CONSTANTS *****
 #define PROFILE_TYPE_ADDRESS 0
@@ -354,6 +360,16 @@ LiquidCrystal lcd(lcdRsPin, lcdEPin, lcdD4Pin, lcdD5Pin, lcdD6Pin, lcdD7Pin);
 #elif VERSION == 2
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire);
 #endif
+
+/*
+ * Deal with the different stupid thermocopuple interfaces
+ * 
+ * Note that the cheap ali express version of the max31855 seems to be missing a few things
+ * it is NOT 5 v tollerant, it might like max of 4 v.  Also needs a bypass capacitor on the thermocouple
+ * I think they said 10 microfarad.
+ * Shoudl really have a level shifter/logic converter
+ */
+
 // MAX31856 thermocouple interface
 //Adafruit_MAX31856 thermocouple = Adafruit_MAX31856(thermocoupleCSPin);
 //Adafruit_MAX31855 thermocouple = Adafruit_MAX31855(thermocoupleCSPin);
@@ -368,18 +384,16 @@ void MAX_Initialize(void){
    // Initialize thermocouple interface
   
   thermocouple.begin();
+
+#ifdef ADAFRUIT_MAX31855_H
+
+#elif ADAFRUIT_MAX31856_H
   //delay(2);
-  //thermocouple.setThermocoupleType(MAX31856_TCTYPE_K);
+  thermocouple.setThermocoupleType(MAX31856_TCTYPE_K);
+  thermocouple.setColdJunctionFaultThreshholds(0, 500);
+  thermocouple.setTempFaultThreshholds(0, 500);
 
-  
-  //thermocouple.setThermocoupleType(MAX31856_TCTYPE_K);
-  
-  //thermocouple.setColdJunctionFaultThreshholds(0, 500);
-  //thermocouple.setTempFaultThreshholds(0, 500);
-
-
-
-  /*Serial.print("Thermocouple type: ");
+  Serial.print("Thermocouple type: ");
   switch (thermocouple.getThermocoupleType() ) {
       case MAX31856_TCTYPE_B: Serial.println("B Type"); break;
       case MAX31856_TCTYPE_E: Serial.println("E Type"); break;
@@ -392,7 +406,8 @@ void MAX_Initialize(void){
       case MAX31856_VMODE_G8: Serial.println("Voltage x8 Gain mode"); break;
       case MAX31856_VMODE_G32: Serial.println("Voltage x8 Gain mode"); break;
       default: Serial.println("Unknown"); break;
-    }*/
+  }
+#endif
 
 }
 
@@ -420,12 +435,6 @@ double MAX_GetTemp(void) {
       //input = thermocouple.readThermocoupleTemperature();
    //    Serial.print("Internal Temp = ");
    //Serial.println(thermocouple.readInternal());
-
-
-    //
-    //input = thermocouple.readThermocouple(CELSIUS);
-
-
 
    // Check for thermocouple fault
     //fault = thermocouple.readFault();
