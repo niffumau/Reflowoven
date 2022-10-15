@@ -164,14 +164,23 @@
 
 *******************************************************************************/
 
+
+#define VERSION 2             // Replace with 1 or 2 *-**********************************************************
+
 // ***** INCLUDES *****
 #include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
 #include <EEPROM.h>
+
+
+#if VERSION == 1
 #include <Adafruit_LiquidCrystal.h>   // updated 
+#elif VERSION == 2
 #include <Adafruit_GFX.h>      // Comment for VERSION 1
 #include <Adafruit_SSD1306.h>  // Comment for VERSION 1 
+#endif
+
 //#include <Adafruit_MAX31856.h> 
 #include <Adafruit_MAX31855.h> 
 //#include <MAX31855.h> 
@@ -221,7 +230,7 @@ typedef enum REFLOW_PROFILE
 
 // ***** CONSTANTS *****
 // ***** GENERAL *****
-#define VERSION 2 // Replace with 1 or 2
+
 
 
 
@@ -292,25 +301,26 @@ unsigned char degree[8]  = {
 
 // ***** PIN ASSIGNMENT *****
 #if VERSION == 1
-unsigned char ssrPin = 3;
-unsigned char thermocoupleCSPin = 2;
-unsigned char lcdRsPin = 10;
-unsigned char lcdEPin = 9;
-unsigned char lcdD4Pin = 8;
-unsigned char lcdD5Pin = 7;
-unsigned char lcdD6Pin = 6;
-unsigned char lcdD7Pin = 5;
-unsigned char buzzerPin = 14;
-unsigned char switchPin = A1;
-unsigned char ledPin = LED_BUILTIN;
-#elif VERSION == 2
-unsigned char ssrPin = A0;
-unsigned char fanPin = A1;
-unsigned char thermocoupleCSPin = 48;
+unsigned char ssrPin = 46;
+unsigned char thermocoupleCSPin = 10;     //48
+unsigned char lcdRsPin = 8;       //9
+unsigned char lcdEPin = 9;      //9
+unsigned char lcdD4Pin = 4;     //4
+unsigned char lcdD5Pin = 5;       //5
+unsigned char lcdD6Pin = 6;       // 6
+unsigned char lcdD7Pin = 7;         // 7
+unsigned char buzzerPin = 44;         // 44
+unsigned char switchPin = A0;         // A0
+//unsigned char ledPin = LED_BUILTIN;
 unsigned char ledPin = 4;
-unsigned char buzzerPin = 5;
-unsigned char switchStartStopPin = 3;
-unsigned char switchLfPbPin = 2;
+#elif VERSION == 2
+unsigned char ssrPin = A0;              //46
+unsigned char fanPin = A1;               // A1
+unsigned char thermocoupleCSPin = 10;     // 48
+unsigned char ledPin = 4;                   // 4
+unsigned char buzzerPin = 9;               // 44
+unsigned char switchStartStopPin = 3;       // 3
+unsigned char switchLfPbPin = 5;            //2
 #endif
 
 // ***** PID CONTROL VARIABLES *****
@@ -349,7 +359,7 @@ unsigned int timerSeconds;
 // Thermocouple fault status
 //unsigned char fault;
 uint8_t fault;
-#ifdef VERSION == 2
+#if VERSION == 2      // for some reason this was set to ifdef???
 unsigned int timerUpdate;
 unsigned char temperature[SCREEN_WIDTH - X_AXIS_START];
 unsigned char x;
@@ -359,7 +369,7 @@ unsigned char x;
 PID reflowOvenPID(&input, &output, &setpoint, kp, ki, kd, DIRECT);
 #if VERSION == 1
 // LCD interface
-LiquidCrystal lcd(lcdRsPin, lcdEPin, lcdD4Pin, lcdD5Pin, lcdD6Pin, lcdD7Pin);
+Adafruit_LiquidCrystal lcd(lcdRsPin, lcdEPin, lcdD4Pin, lcdD5Pin, lcdD6Pin, lcdD7Pin);    // added Adafruit_
 #elif VERSION == 2
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire);
 #endif
@@ -385,12 +395,8 @@ Adafruit_MAX31855 thermocouple = Adafruit_MAX31855(thermocoupleCSPin);
 
 
 
-
-
-
 void MAX_Initialize(void){
-
-  
+  Serial.println("Initialize Thermocouple Interface...");  
   thermocouple.begin();   // Initialize thermocouple interface
 
 #ifdef ADAFRUIT_MAX31855_H
@@ -533,10 +539,15 @@ void setup()
   pinMode(ledPin, OUTPUT);
   digitalWrite(ledPin, HIGH);
 
- 
+  // setup pins
+  pinMode(switchStartStopPin,INPUT_PULLUP);
+  pinMode(switchLfPbPin,INPUT_PULLUP);
+
+
   // Start-up splash
   digitalWrite(buzzerPin, HIGH);
 #if VERSION == 1
+  Serial.println("Initialize LCD...");
   lcd.begin(8, 2);
   lcd.createChar(0, degree);
   lcd.clear();
@@ -544,11 +555,21 @@ void setup()
   lcd.setCursor(0, 1);
   lcd.print(F(" Reflow "));
 #elif VERSION == 2
-  oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  Serial.println("Initialize OLED...");
+
+ 
+  if(!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+  //if(!oled.begin(0x3C)) {
+    Serial.println(F("SSD1306 Allocation failed"));
+    for(;;);  // loop forever
+  }
+  //oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   oled.display();
 #endif
+
   digitalWrite(buzzerPin, LOW);
-  delay(2000);
+  delay(2000);    // Needed for the display, should show us a splash screen for the OLED
+
 #if VERSION == 1
   lcd.clear();
   lcd.print(F(" v1.00  "));
@@ -557,6 +578,7 @@ void setup()
   delay(2000);
   lcd.clear();
 #elif VERSION == 2
+  Serial.println("Display Start Message on OLED...");
   oled.clearDisplay();
   oled.setTextSize(1);
   oled.setTextColor(WHITE);
@@ -569,6 +591,7 @@ void setup()
   oled.println(F("      04-03-19"));
   oled.display();
   delay(3000);
+  Serial.println("Clear Display OLED...");
   oled.clearDisplay();
 #endif
 
