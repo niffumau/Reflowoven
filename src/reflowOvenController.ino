@@ -315,9 +315,11 @@ unsigned char switchPin = A0;         // A0
 unsigned char ledPin = 4;
 #elif VERSION == 2
 unsigned char ssrPin = A0;              //46
-unsigned char fanPin = A1;               // A1
+unsigned char ssrPinBottom = A1;
+unsigned char fanPin = A2;               // A1
+
 unsigned char thermocoupleCSPin = 10;     // 48
-unsigned char ledPin = 4;                   // 4
+unsigned char ledPin = 6;                   // 4
 unsigned char buzzerPin = 9;               // 44
 unsigned char switchStartStopPin = 3;       // 3
 unsigned char switchLfPbPin = 5;            //2
@@ -507,6 +509,38 @@ void ROTARYCheck() {
 }
 */
 
+void tone_error(void) {
+  for (int i=0; i < 10; i++) {
+    tone(buzzerPin, 2000,50);
+    delay(100);
+  }
+  digitalWrite(buzzerPin, LOW); 
+}
+
+void tone_beep(void) {
+  tone(buzzerPin, 2000,50);
+  delay(100);
+  digitalWrite(buzzerPin, LOW); 
+}
+
+void tone_start(void) {
+  tone(buzzerPin, 1000,200);
+  delay(200);
+  tone(buzzerPin, 2000,200);
+  delay(200);
+  tone(buzzerPin, 3000,200);
+  delay(200);
+  digitalWrite(buzzerPin, LOW); 
+}
+void tone_finish(void) {
+  tone(buzzerPin, 3000,200);
+  delay(200);
+  tone(buzzerPin, 2000,200);
+  delay(200);
+  tone(buzzerPin, 2000,200);
+  delay(200);
+  digitalWrite(buzzerPin, LOW); 
+}
 
 void setup()
 {
@@ -530,6 +564,8 @@ void setup()
   // SSR pin initialization to ensure reflow oven is off
   digitalWrite(ssrPin, LOW);
   pinMode(ssrPin, OUTPUT);
+  digitalWrite(ssrPinBottom, LOW);
+  pinMode(ssrPinBottom, OUTPUT);
 
   // Buzzer pin initialization to ensure annoying buzzer is off
   digitalWrite(buzzerPin, LOW);
@@ -545,7 +581,7 @@ void setup()
 
 
   // Start-up splash
-  digitalWrite(buzzerPin, HIGH);
+  //digitalWrite(buzzerPin, HIGH);
 #if VERSION == 1
   Serial.println("Initialize LCD...");
   lcd.begin(8, 2);
@@ -567,7 +603,9 @@ void setup()
   oled.display();
 #endif
 
-  digitalWrite(buzzerPin, LOW);
+  tone_start(); // why not
+  //digitalWrite(buzzerPin, LOW); 
+  
   delay(2000);    // Needed for the display, should show us a splash screen for the OLED
 
 #if VERSION == 1
@@ -896,7 +934,10 @@ void loop()
         // Retrieve current time for buzzer usage
         buzzerPeriod = millis() + 1000;
         // Turn on buzzer to indicate completion
-        digitalWrite(buzzerPin, HIGH);
+        //digitalWrite(buzzerPin, HIGH);
+        tone_finish();
+
+
         // Turn off reflow process
         reflowStatus = REFLOW_STATUS_OFF;
         // Proceed to reflow Completion state
@@ -908,7 +949,8 @@ void loop()
       if (millis() > buzzerPeriod)
       {
         // Turn off buzzer
-        digitalWrite(buzzerPin, LOW);
+        //digitalWrite(buzzerPin, LOW);
+        tone_finish();
         // Reflow process ended
         reflowState = REFLOW_STATE_IDLE;
       }
@@ -1056,13 +1098,20 @@ void loop()
       // Time to shift the Relay Window
       windowStartTime += windowSize;
     }
-    if (output > (now - windowStartTime)) digitalWrite(ssrPin, HIGH);
-    else digitalWrite(ssrPin, LOW);
+    if (output > (now - windowStartTime)) { 
+      digitalWrite(ssrPin, HIGH);
+      digitalWrite(ssrPinBottom, HIGH);
+      }
+    else {
+      digitalWrite(ssrPin, LOW);
+      digitalWrite(ssrPinBottom, LOW);
+    }
   }
   // Reflow oven process is off, ensure oven is off
   else
   {
     digitalWrite(ssrPin, LOW);
+    digitalWrite(ssrPinBottom, LOW);
   }
 }
 
