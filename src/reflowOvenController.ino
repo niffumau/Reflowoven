@@ -318,7 +318,7 @@ unsigned char ssrPin = A0;              //46
 unsigned char ssrPinBottom = A1;
 unsigned char fanPin = A2;               // A1
 
-unsigned char thermocoupleCSPin = 10;     // 48
+unsigned char thermocoupleCSPin = 4;     // 48, 10
 unsigned char ledPin = 6;                   // 4
 unsigned char buzzerPin = 9;               // 44
 unsigned char switchStartStopPin = 3;       // 3
